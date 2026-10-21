@@ -260,6 +260,61 @@ mod progress_tracker_events {
             ]
         );
     }
+
+    #[test]
+    fn test_delegate_progress_emits_progress_delegated_event() {
+        let env = Env::default();
+        let (_admin, contract_id) = setup(&env);
+        let client = ProgressTrackerClient::new(&env, &contract_id);
+        env.mock_all_auths();
+
+        let learner = Address::generate(&env);
+        let delegate = Address::generate(&env);
+
+        client.delegate_progress(&learner, &delegate);
+
+        let all = env.events().all();
+        let last = all.last().expect("no events emitted");
+        assert_eq!(
+            soroban_sdk::vec![&env, last],
+            soroban_sdk::vec![
+                &env,
+                (
+                    contract_id.clone(),
+                    (Symbol::new(&env, "progress_delegated"), learner.clone()).into_val(&env),
+                    (delegate.clone(),).into_val(&env),
+                )
+            ]
+        );
+    }
+
+    #[test]
+    fn test_revoke_delegation_emits_delegation_revoked_event() {
+        let env = Env::default();
+        let (_admin, contract_id) = setup(&env);
+        let client = ProgressTrackerClient::new(&env, &contract_id);
+        env.mock_all_auths();
+
+        let learner = Address::generate(&env);
+        let delegate = Address::generate(&env);
+        client.delegate_progress(&learner, &delegate);
+
+        client.revoke_delegation(&learner);
+
+        let all = env.events().all();
+        let last = all.last().expect("no events emitted");
+        assert_eq!(
+            soroban_sdk::vec![&env, last],
+            soroban_sdk::vec![
+                &env,
+                (
+                    contract_id.clone(),
+                    (Symbol::new(&env, "delegation_revoked"), learner.clone()).into_val(&env),
+                    ().into_val(&env),
+                )
+            ]
+        );
+    }
 }
 
 // ── Learn Token Events ──────────────────────────────────────────────────────
